@@ -11,8 +11,12 @@
         "output_directory": "output-rocky-linux",
         "ssh_username": "root",
         "ssh_password": "root",
-        "ssh_wait_timeout": "20m",
-        "vm_name": "rocky-linux-kvm-image"
+        "ssh_wait_timeout": "30m",
+        "vm_name": "rocky-linux-kvm-image",
+        "http_directory": "./",
+        "boot_command": [
+          "<tab> linux ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg<enter><wait>"
+        ]
       }
     ],
     "provisioners": [
