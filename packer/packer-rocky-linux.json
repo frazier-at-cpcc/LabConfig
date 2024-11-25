@@ -1,0 +1,28 @@
+{
+    "builders": [
+      {
+        "type": "qemu",
+        "format": "qcow2",
+        "accelerator": "kvm",
+        "disk_size": "10240",
+        "headless": true,
+        "iso_url": "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.2-x86_64-minimal.iso",
+        "iso_checksum": "sha256:d8c76cd99c289ce04fcff11f68c0b57db749ab33f71db3a9d29ed5d432ef10ab",
+        "output_directory": "output-rocky-linux",
+        "ssh_username": "root",
+        "ssh_password": "root",
+        "ssh_wait_timeout": "20m",
+        "vm_name": "rocky-linux-kvm-image"
+      }
+    ],
+    "provisioners": [
+      {
+        "type": "shell",
+        "inline": [
+          "dnf update -y",
+          "dnf install -y vim openssh-server ansible",
+          "systemctl enable sshd"
+        ]
+      }
+    ]
+  }

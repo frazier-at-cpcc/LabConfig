@@ -1,0 +1,70 @@
+---
+- name: Configure Serverb
+  hosts: serverb
+  become: yes
+
+  tasks:
+    - name: Install necessary tools
+      package:
+        name:
+          - vim
+          - openssh-server
+          - htop
+        state: present
+
+    - name: Enable and start SSH service
+      service:
+        name: sshd
+        state: started
+        enabled: yes
+
+    - name: Harden SSH configuration
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        state: present
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^#PermitRootLogin yes', line: 'PermitRootLogin no' }
+        - { regexp: '^#PasswordAuthentication yes', line: 'PasswordAuthentication no' }
+      notify: Reload SSH
+
+    - name: Reload SSH service
+      service:
+        name: sshd
+        state: reloaded
+
+    - name: Configure static IP
+      ansible.builtin.shell:
+        cmd: |
+          nmcli connection modify "Wired connection 1" ipv4.addresses 192.168.122.102/24 \
+          ipv4.gateway 192.168.122.1 ipv4.dns 8.8.8.8 ipv4.method manual
+          nmcli connection up "Wired connection 1"
+
+    - name: Set up /data/logs with sticky bit
+      file:
+        path: /data/logs
+        state: directory
+        mode: '1777'
+
+    - name: Create sample files in /var/tmp/lab_files
+      file:
+        path: /var/tmp/lab_files
+        state: directory
+        mode: '0755'
+
+    - name: Create test files in /var/tmp/lab_files
+      copy:
+        dest: "/var/tmp/lab_files/{{ item.name }}"
+        content: ""
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { name: "test1", owner: "contractor1", group: "contractor", mode: "0640" }
+        - { name: "test2", owner: "root", group: "root", mode: "0644" }
+      notify: Truncate test2
+
+    - name: Truncate test2 to 100 bytes
+      command:
+        cmd: truncate -s 100 /var/tmp/lab_files/test2

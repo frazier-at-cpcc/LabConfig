@@ -1,0 +1,47 @@
+---
+- name: Configure Servera
+  hosts: servera
+  become: yes
+
+  tasks:
+    - name: Install necessary tools
+      package:
+        name:
+          - vim
+          - openssh-server
+        state: present
+
+    - name: Enable and start SSH service
+      service:
+        name: sshd
+        state: started
+        enabled: yes
+
+    - name: Create secureops group and users
+      user:
+        name: "{{ item.name }}"
+        state: present
+        groups: secureops
+        append: yes
+      loop:
+        - { name: "dataadmin" }
+        - { name: "netadmin" }
+
+    - name: Set passwords for users
+      ansible.builtin.shell:
+        cmd: echo "redhat" | passwd --stdin "{{ item }}"
+      loop:
+        - dataadmin
+        - netadmin
+
+    - name: Configure password policies for dataadmin
+      ansible.builtin.shell:
+        cmd: chage -m 10 -M 30 -d 0 dataadmin
+
+    - name: Create /data/reports and configure permissions
+      file:
+        path: /data/reports
+        state: directory
+        owner: dataadmin
+        group: secureops
+        mode: '2775'

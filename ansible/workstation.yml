@@ -1,0 +1,41 @@
+---
+- name: Configure Workstation
+  hosts: workstation
+  become: yes
+
+  tasks:
+    - name: Install necessary tools
+      package:
+        name:
+          - vim
+          - openssh-clients
+        state: present
+
+    - name: Generate SSH key for the workstation
+      ansible.builtin.command:
+        cmd: ssh-keygen -q -t rsa -N "" -f /root/.ssh/workstation_key
+      args:
+        creates: /root/.ssh/workstation_key
+
+    - name: Configure SSH access to servera and serverb
+      ansible.builtin.copy:
+        dest: /root/.ssh/config
+        content: |
+          Host servera
+              HostName 192.168.122.101
+              User student
+              IdentityFile /root/.ssh/workstation_key
+
+          Host serverb
+              HostName 192.168.122.102
+              User student
+              IdentityFile /root/.ssh/workstation_key
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Create a shared directory for lab
+      file:
+        path: /root/lab_shared
+        state: directory
+        mode: '0755'
